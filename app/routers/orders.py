@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request
 
 from app.domain import Order
+from app.models import CheckoutRequest
 from app.services import checkout_service
 
 router = APIRouter(tags=["orders"])
@@ -28,9 +29,9 @@ def _serialize(order: Order) -> dict:
 
 
 @router.post("/carts/{cart_id}/checkout")
-async def checkout(cart_id: str, request: Request):
+async def checkout(cart_id: str, request: Request, body: CheckoutRequest = CheckoutRequest()):
     store = request.app.state.store
-    order = await checkout_service.checkout(store, cart_id)
+    order = await checkout_service.checkout(store, cart_id, body.coupon_code)
     return _serialize(order)
 
 

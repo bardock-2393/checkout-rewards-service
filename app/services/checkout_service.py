@@ -3,6 +3,7 @@ import uuid
 
 from app.domain import Cart, CartStatus, Order, OrderLine
 from app.errors import NotFoundError, OutOfStockError, ValidationError
+from app.services import coupon_service
 from app.store import InMemoryStore
 
 
@@ -14,7 +15,7 @@ def _get_cart_and_lock(store: InMemoryStore, cart_id: str) -> tuple[Cart, asynci
     return cart, lock
 
 
-async def checkout(store: InMemoryStore, cart_id: str) -> Order:
+async def checkout(store: InMemoryStore, cart_id: str, coupon_code: str | None = None) -> Order:
     cart, cart_lock = _get_cart_and_lock(store, cart_id)
 
     async with cart_lock:
@@ -28,9 +29,9 @@ async def checkout(store: InMemoryStore, cart_id: str) -> Order:
             raise ValidationError("cart is empty")
 
         async with store.global_lock:
-            # Validate every line before mutating anything, so a single
-            # out-of-stock item fails the whole checkout instead of partially
-            # decrementing inventory.
+            # Validate everything - stock AND coupon - before mutating
+            # anything. A coupon must never be consumed by a checkout that
+            # ultimately fails on inventory, and vice versa.
             lines: list[OrderLine] = []
             for product_id, quantity in cart.items.items():
                 product = store.products.get(product_id)
@@ -49,21 +50,28 @@ async def checkout(store: InMemoryStore, cart_id: str) -> Order:
                     )
                 )
 
+            coupon = coupon_service.validate_coupon(store, coupon_code) if coupon_code else None
+
             for line in lines:
                 store.products[line.product_id].stock -= line.quantity
 
             subtotal = sum(line.subtotal_paise for line in lines)
+            discount = coupon_service.discount_for(subtotal, coupon.percent_off) if coupon else 0
+
             order = Order(
                 id=str(uuid.uuid4()),
                 cart_id=cart.id,
                 lines=lines,
                 subtotal_paise=subtotal,
-                discount_paise=0,
-                total_paise=subtotal,
-                coupon_code=None,
+                discount_paise=discount,
+                total_paise=subtotal - discount,
+                coupon_code=coupon.code if coupon else None,
             )
             store.orders[order.id] = order
             store.successful_order_count += 1
+
+            if coupon:
+                coupon_service.redeem(coupon)
 
             cart.status = CartStatus.CHECKED_OUT
             cart.order_id = order.id
