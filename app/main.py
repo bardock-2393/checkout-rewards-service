@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.errors import register_error_handlers
 from app.routers import admin, carts, orders
@@ -10,6 +11,15 @@ def create_app(coupon_every_n_orders: int = 5, coupon_percent_off: int = 10) -> 
     app.state.store = InMemoryStore(
         coupon_every_n_orders=coupon_every_n_orders,
         coupon_percent_off=coupon_percent_off,
+    )
+
+    # Demo-only: the frontend is a separate Vite dev server on another port.
+    # Wide open since there's no auth/session to protect in this exercise.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     register_error_handlers(app)
