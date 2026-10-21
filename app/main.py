@@ -1,12 +1,14 @@
 from fastapi import FastAPI
 
 from app.errors import register_error_handlers
+from app.routers import carts
 from app.store import InMemoryStore
 
 app = FastAPI(title="Checkout & Rewards Service")
 app.state.store = InMemoryStore(coupon_every_n_orders=5, coupon_percent_off=10)
 
 register_error_handlers(app)
+app.include_router(carts.router)
 
 
 @app.get("/products")
