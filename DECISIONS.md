@@ -220,6 +220,39 @@ a stack I'd have to re-derive idioms for under a time box.
 **Consequences:** None functionally — the assignment is explicit that stack
 choice doesn't matter for evaluation.
 
+## Decision: A small React frontend, as a client for the API — not a product
+
+**Context:** Frontend is optional per the spec, and explicitly shouldn't
+compensate for an unreliable backend. I'm applying for a full-stack role, so
+I wanted something to point at, but I didn't want to spend the time budget
+building a real storefront (routing, auth UI, design system) when none of
+that is what's being evaluated here.
+
+**Options considered:**
+- Option A: no frontend, Postman/curl only (allowed by the spec).
+- Option B: a full SPA with routing, a component library, client-side state
+  management.
+- Option C: one page, plain React + `fetch`, no router/state library, that
+  exercises every endpoint.
+
+**Choice:** Option C.
+
+**Why:** The point of a frontend here is to *demonstrate backend behavior*
+— show live stock decrementing, the coupon milestone gate firing, discount
+math landing correctly — not to prove I can build a production UI in a
+timebox. One page with plain `useState` does that with the least code that
+could possibly work. Option B would be solving a problem the spec didn't
+ask about at the expense of backend polish, which is exactly what the spec
+warns against.
+
+**Consequences:** CORS is wide open (`allow_origins=["*"]`) on the backend
+so the Vite dev server (port 5173) can call it directly (port 8000) with no
+proxy — fine for a local demo with no auth/session to protect, and called
+out explicitly in `app/main.py` and the README rather than left implicit.
+No build step is wired into the backend; the frontend is run separately in
+dev mode, which is the right trade-off for "demonstrate the behavior," not
+"ship a deployable bundle."
+
 ## Transaction / concurrency / idempotency strategy, summarized
 
 - **Idempotency:** cart state (`open` → `checked_out`) is the idempotency

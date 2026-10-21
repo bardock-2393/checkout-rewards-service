@@ -1,0 +1,43 @@
+.page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+section {
+  margin-bottom: 32px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+input[type="number"] {
+  width: 60px;
+}
+
+button {
+  margin-right: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.error {
+  color: #c0392b;
+}
+
+.order {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #2ecc71;
+  border-radius: 4px;
+}
